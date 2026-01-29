@@ -133,11 +133,13 @@ Unity Catalogブラウザーアプリを作成して。
 databricks apps run-local --prepare-environment
 ```
 
-**予想されるエラー**: SQL Warehouse IDが設定されていない
+**予想されるエラー**: app.yamlの`valueFrom`がローカルで解決できない
 
 ```
-Error: DATABRICKS_WAREHOUSE_ID is not set
+Error: DATABRICKS_WAREHOUSE_ID defined in app.yaml with valueFrom property and can't be resolved locally. Please set DATABRICKS_WAREHOUSE_ID environment variable in your terminal or using --env flag
 ```
+
+**エラーの意味**: app.yamlで`valueFrom: sql-warehouse-id`と書くと、Databricks Apps環境では自動的にWarehouse IDが注入されます。しかしローカル実行では解決できないため、`--env`フラグで明示的に渡す必要があります。
 
 ### Step 2-2: Claude Codeに戻ってエラーを相談(5分)
 
@@ -150,32 +152,27 @@ claude
 ```
 ローカル実行で以下のエラーが出た。原因と対処法を教えて。
 
-Error: DATABRICKS_WAREHOUSE_ID is not set
+Error: DATABRICKS_WAREHOUSE_ID defined in app.yaml with valueFrom property and can't be resolved locally. Please set DATABRICKS_WAREHOUSE_ID environment variable in your terminal or using --env flag
 ```
 
 **観察ポイント**:
 - Claude Codeがエラー原因を特定できるか
 - 具体的な修正提案があるか
 
-### Step 2-3: 環境変数の設定(2分)
+### Step 2-3: --envフラグで環境変数を渡す(2分)
 
-Claude Codeの提案に従って修正。おそらく以下のような指示:
-
-```
-@app.yaml にSQL Warehouse IDを追加して。
-Warehouse IDは環境変数から読み取るように。
-IDは: <講師から提供されたID>
-```
-
-### Step 2-4: 再度ローカル実行(5分)
+Claude Codeの提案に従って修正。`--env`フラグでWarehouse IDを渡します:
 
 ```bash
-# 一旦抜ける
 /exit
 
-# 再実行
-databricks apps run-local --prepare-environment
+# --envフラグでWarehouse IDを渡してローカル実行
+databricks apps run-local --prepare-environment --env DATABRICKS_WAREHOUSE_ID=<講師から提供されたID>
 ```
+
+**学習ポイント**: app.yamlの`valueFrom`はDatabricks Apps環境で自動解決されるが、ローカルでは`--env`で明示的に渡す必要がある
+
+### Step 2-4: 動作確認(5分)
 
 **ブラウザで確認**: http://localhost:8000
 
@@ -375,6 +372,7 @@ https://<workspace>.cloud.databricks.com/apps/uc-browser-<your-name>
 |--------|------|------|
 | `streamlit: executable file not found` | 依存関係未インストール | `--prepare-environment`を付けて実行 |
 | `ModuleNotFoundError: streamlit` | 依存関係未インストール | `--prepare-environment`を付けて実行 |
+| `valueFrom property and can't be resolved locally` | valueFromはローカルで解決不可 | `--env DATABRICKS_WAREHOUSE_ID=xxx`で渡す |
 | CLAUDE.mdの内容を説明できない | 別ディレクトリで起動 | `cd databricks-apps-workshop`してから再起動 |
 | `YAML parse error` | app.yamlの構文エラー | Claude Codeに「@app.yaml の構文を検証して」 |
 | `Connection refused` | ポート競合 | 別のターミナルでアプリが動いていないか確認 |

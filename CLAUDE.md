@@ -17,7 +17,7 @@ Unity Catalogのデータを可視化するStreamlitダッシュボードアプ�
 # ローカル実行(初回は--prepare-environmentで仮想環境を自動作成)
 databricks apps run-local --prepare-environment
 
-# 環境変数を追加してローカル実行
+# 環境変数を追加してローカル実行(valueFromはローカルで解決できないため--envで渡す)
 databricks apps run-local --prepare-environment --env DATABRICKS_WAREHOUSE_ID=xxx
 
 # デプロイ
@@ -27,7 +27,9 @@ databricks apps deploy <app-name>
 databricks apps logs <app-name>
 ```
 
-**重要**: `--prepare-environment`を付けないと、streamlit等の依存関係がインストールされていない状態で実行され、`executable file not found`エラーになる。
+**重要**: 
+- `--prepare-environment`を付けないと、streamlit等の依存関係がインストールされていない状態で実行され、`executable file not found`エラーになる
+- app.yamlで`valueFrom`を使用している環境変数は、ローカル実行時に`--env`フラグで明示的に渡す必要がある
 
 ## app.yaml のルール
 
@@ -152,6 +154,7 @@ project/
 | エラー | 原因 | 対処法 |
 |-------|------|--------|
 | `streamlit: executable file not found` | 依存関係未インストール | `--prepare-environment`を付けて実行 |
+| `valueFrom property and can't be resolved locally` | valueFromはローカルで解決不可 | `--env VAR_NAME=value`で環境変数を渡す |
 | `YAML parse error` | app.yamlの構文エラー | command/envの形式を確認 |
 | `ModuleNotFoundError` | 依存関係不足 | requirements.txtを確認 |
 | `Connection refused` | ポート不一致 | --server.port=8000を確認 |
