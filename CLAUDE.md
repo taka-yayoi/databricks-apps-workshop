@@ -36,23 +36,58 @@ databricks apps run-local --prepare-environment
 # 環境変数を追加してローカル実行(valueFromはローカルで解決できないため--envで渡す)
 databricks apps run-local --prepare-environment --env DATABRICKS_WAREHOUSE_ID=xxx
 
-# ワークスペースに同期(.gitignoreを尊重するので.venv等は除外される)
-databricks sync . /Workspace/Users/<your-email>/apps/<app-name>
-
-# 新規アプリ作成(初回のみ、UIで作成することも可能)
-databricks apps create <app-name>
-
-# デプロイ(ワークスペース上のパスを指定)
-databricks apps deploy <app-name> --source-code-path /Workspace/Users/<your-email>/apps/<app-name>
-
 # ログ確認
 databricks apps logs <app-name>
 ```
 
 **重要**: 
-- `databricks apps deploy`はローカルからの直接デプロイではない。先に`workspace import-dir`でワークスペースにアップロードが必要
 - `--prepare-environment`を付けないと、streamlit等の依存関係がインストールされていない状態で実行され、`executable file not found`エラーになる
 - app.yamlで`valueFrom`を使用している環境変数は、ローカル実行時に`--env`フラグで明示的に渡す必要がある
+
+## デプロイ(Databricks Asset Bundles)
+
+デプロイにはDatabricks Asset Bundlesを使用する。リソース設定(SQL Warehouse等)もコードで管理できる。
+
+### databricks.yml の例
+
+```yaml
+bundle:
+  name: uc-browser
+
+resources:
+  apps:
+    uc-browser:
+      name: uc-browser-<your-name>
+      source_code_path: .
+      resources:
+        - name: sql-warehouse
+          sql_warehouse:
+            id: <warehouse-id>
+            permission: CAN_USE
+
+variables:
+  warehouse_id:
+    description: SQL Warehouse ID
+    default: <your-warehouse-id>
+```
+
+### デプロイコマンド
+
+```bash
+# デプロイ(初回はアプリ作成も含む)
+databricks bundle deploy
+
+# アプリの状態確認
+databricks apps describe <app-name>
+
+# アプリのURL確認
+databricks apps get <app-name> --output json | jq -r '.url'
+```
+
+**Bundlesのメリット**:
+- リソース設定(SQL Warehouse等)をコードで管理
+- UIでの手動設定が不要
+- 環境間(dev/staging/prod)の切り替えが容易
 
 ## app.yaml のルール
 
@@ -89,7 +124,7 @@ command:
 # ✅ 正しい
 env:
   - name: DATABRICKS_WAREHOUSE_ID
-    valueFrom: sql-warehouse-id
+    valueFrom: sql-warehouse
   - name: LOG_LEVEL
     value: INFO
 
@@ -102,9 +137,13 @@ env:
 
 | パターン | 用途 |
 |----------|------|
-| `valueFrom: sql-warehouse-id` | SQL Warehouse ID |
+| `valueFrom: sql-warehouse` | SQL Warehouse ID |
 | `valueFrom: serving-endpoint-name` | Model Serving エンドポイント名 |
 | `value: "固定値"` | 固定の設定値 |
+
+**重要**: `valueFrom`を使用するには、Databricks Apps UIでリソースを設定する必要があります。
+Compute > Apps > アプリ名 > Settings > Resources で SQL Warehouse等を追加してください。
+リソース設定なしでは`valueFrom`が解決されず、アプリが動作しません。
 
 ## セキュリティ要件
 
@@ -294,6 +333,7 @@ numpy>=1.26.0,<2.0.0
 ```
 project/
 ├── CLAUDE.md           # このファイル
+├── databricks.yml      # Databricks Asset Bundles設定(デプロイ時に生成)
 ├── app.yaml            # Databricks Apps設定
 ├── app.py              # メインアプリケーション
 ├── requirements.txt    # 依存関係
@@ -304,8 +344,6 @@ project/
 
 | エラー | 原因 | 対処法 |
 |-------|------|--------|
-| `App with name xxx does not exist` | 新規アプリにdeployを実行 | 先に`databricks apps create <app-name>`を実行 |
-| `Source code path must be a valid workspace path` | ローカルパスを指定 | 先に`workspace import-dir`でアップロードしてからワークスペースパスを指定 |
 | `JAVA_GATEWAY_EXITED` | SparkSessionを使用しようとした | Databricks AppsではSparkは使用不可。SQL Connectorを使用 |
 | `streamlit: executable file not found` | 依存関係未インストール | `--prepare-environment`を付けて実行 |
 | `valueFrom property and can't be resolved locally` | valueFromはローカルで解決不可 | `--env VAR_NAME=value`で環境変数を渡す |
@@ -327,4 +365,3 @@ project/
 | **認証** | Databricksユーザー認証必須(匿名アクセス不可) |
 | **ポート/アドレス指定禁止** | `STREAMLIT_SERVER_PORT`と`STREAMLIT_SERVER_ADDRESS`は自動設定。app.yamlでオーバーライド禁止 |
 | **接続タイムアウト** | SQL Warehouseがアイドル停止すると接続が切れる可能性あり |
-| **デプロイ方式** | ローカルから直接デプロイ不可。先にワークスペースにアップロードが必要 |

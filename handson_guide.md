@@ -255,7 +255,7 @@ databricks apps run-local --prepare-environment
 Error: DATABRICKS_WAREHOUSE_ID defined in app.yaml with valueFrom property and can't be resolved locally. Please set DATABRICKS_WAREHOUSE_ID environment variable in your terminal or using --env flag
 ```
 
-**エラーの意味**: app.yamlで`valueFrom: sql-warehouse-id`と書くと、Databricks Apps環境では自動的にWarehouse IDが注入されます。しかしローカル実行では解決できないため、`--env`フラグで明示的に渡す必要があります。
+**エラーの意味**: app.yamlで`valueFrom: sql-warehouse`と書くと、Databricks Apps環境では自動的にWarehouse IDが注入されます。しかしローカル実行では解決できないため、`--env`フラグで明示的に渡す必要があります。
 
 ### Step 2-2: Claude Codeに戻ってエラーを相談(5分)
 
@@ -451,18 +451,6 @@ Extended Thinkingのトグル方法は**Claude Codeのバージョンによっ�
 
 ### Step 4-1: 学んだことを追記
 
-**方法1: `#`キーによるクイック追記**(推奨)
-
-`#`で始めると、Claude Codeが自動的にCLAUDE.mdに追記します:
-
-```
-# DATABRICKS_WAREHOUSE_IDはローカル実行時に--envで渡す必要がある
-```
-
-→ Project-level(プロジェクトのCLAUDE.md)かUser-level(~/.claude/CLAUDE.md)を選択
-
-**方法2: 直接編集を依頼**
-
 ```
 @CLAUDE.md に以下のセクションを追加して。
 
@@ -493,53 +481,56 @@ Extended Thinkingのトグル方法は**Claude Codeのバージョンによっ�
 
 ## Phase 5: デプロイ(5分)
 
-### Step 5-1: デプロイ前の最終確認
+ローカルで動作確認できたアプリをDatabricks Appsにデプロイします。
+
+### Step 5-1: デプロイの実行
+
+Claude Codeに以下のプロンプトを入力:
+
+```
+Databricks Appsにデプロイして。
+- アプリ名: uc-browser-<your-name>
+- SQL Warehouse ID: <your-warehouse-id>
+
+Databricks Asset Bundlesを使って、リソース設定も含めてデプロイして。
+```
+
+**Claude Codeが実行すること**:
+1. `databricks.yml`(Bundle設定ファイル)を生成
+2. SQL Warehouseリソースの設定を含める
+3. `databricks bundle deploy`を実行
+4. デプロイ完了を確認
+
+**補足**: Databricks Asset Bundlesはインフラ設定をコードで管理するツールです。詳細を知る必要はありません。Claude Codeが適切な設定を生成してくれます。
+
+### Step 5-2: 動作確認
+
+デプロイ完了後、Claude Codeが表示するURLにアクセス:
+```
+https://<workspace>.cloud.databricks.com/apps/uc-browser-<your-name>
+```
+
+または、以下のプロンプトでURLを確認:
+```
+デプロイしたアプリのURLを教えて
+```
+
+### Step 5-3: (オプション)手動デプロイの場合
+
+Claude Codeを使わずに手動でデプロイする場合:
 
 ```bash
 # Claude Codeを終了
 /exit
 
-# ファイル一覧確認
-ls -la
+# Bundle設定を確認
+cat databricks.yml
 
-# app.yamlの内容確認
-cat app.yaml
-```
+# デプロイ
+databricks bundle deploy
 
-### Step 5-2: デプロイ実行
-
-**使用するコマンドの説明**:
-
-| コマンド | 何をするか |
-|----------|-----------|
-| `sync` | ローカルファイルをワークスペースに同期(`.gitignore`を尊重) |
-| `apps create` | Databricks上にアプリのエントリを作成(初回のみ) |
-| `apps deploy` | ワークスペース上のソースコードからアプリをビルド・起動 |
-| `apps describe` | アプリの状態(ACTIVE/PENDING/ERROR等)を確認 |
-
-```bash
-# 1. ワークスペースに同期(.gitignoreに書かれた.venv等は除外される)
-databricks sync . /Workspace/Users/<your-email>/apps/uc-browser-<your-name>
-
-# 2. 新規アプリを作成(初回のみ)
-databricks apps create uc-browser-<your-name>
-
-# 3. デプロイ
-databricks apps deploy uc-browser-<your-name> --source-code-path /Workspace/Users/<your-email>/apps/uc-browser-<your-name>
-
-# 4. デプロイ状況確認(状態がACTIVEになるまで待つ)
+# アプリの状態確認
 databricks apps describe uc-browser-<your-name>
-```
-
-**注意**: 
-- `sync`は`.gitignore`を尊重するので、`.venv/`や`__pycache__/`は自動的に除外される
-- UIからアプリを作成した場合、作成時に表示されるコマンドをコピーして使用可能
-
-### Step 5-3: 動作確認
-
-デプロイ完了後、表示されたURLにアクセス:
-```
-https://<workspace>.cloud.databricks.com/apps/uc-browser-<your-name>
 ```
 
 **Phase 5完了チェック**:

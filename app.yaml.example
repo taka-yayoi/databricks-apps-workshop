@@ -13,7 +13,7 @@ command:
 env:
   # Databricksリソースを参照する場合はvalueFrom
   - name: DATABRICKS_WAREHOUSE_ID
-    valueFrom: sql-warehouse-id
+    valueFrom: sql-warehouse
   
   # 固定値の場合はvalue
   - name: LOG_LEVEL
@@ -28,6 +28,6 @@ env:
     value: default
 
 # valueFromで使用できるリソースタイプ:
-# - sql-warehouse-id: SQL Warehouse ID
+# - sql-warehouse: SQL Warehouse ID
 # - serving-endpoint-name: Model Serving エンドポイント名
 # - secret: Databricks Secret (scope/key形式)
