@@ -25,7 +25,12 @@
 | Python | `python --version` | 3.10以上 |
 | Git | `git --version` | バージョン番号が表示 |
 
-**SQL Warehouse ID**: ___________________(講師から提供)
+**SQL Warehouse ID**: Databricksワークスペースで確認
+```bash
+# Databricks CLIで確認
+databricks warehouses list
+# または Databricks UI > SQL Warehouses > 対象のWarehouse > 詳細からIDをコピー
+```
 
 ## Phase 1: プロジェクトセットアップと基本生成(15分)
 
@@ -144,7 +149,8 @@ Error: DATABRICKS_WAREHOUSE_ID defined in app.yaml with valueFrom property and c
 ### Step 2-2: Claude Codeに戻ってエラーを相談(5分)
 
 ```bash
-claude
+# -c オプションで前の会話を継続
+claude -c
 ```
 
 **エラーメッセージを貼り付けて相談**:
@@ -167,7 +173,7 @@ Claude Codeの提案に従って修正。`--env`フラグでWarehouse IDを渡�
 /exit
 
 # --envフラグでWarehouse IDを渡してローカル実行
-databricks apps run-local --prepare-environment --env DATABRICKS_WAREHOUSE_ID=<講師から提供されたID>
+databricks apps run-local --prepare-environment --env DATABRICKS_WAREHOUSE_ID=<あなたのWarehouse ID>
 ```
 
 **学習ポイント**: app.yamlの`valueFrom`はDatabricks Apps環境で自動解決されるが、ローカルでは`--env`で明示的に渡す必要がある
@@ -180,12 +186,15 @@ databricks apps run-local --prepare-environment --env DATABRICKS_WAREHOUSE_ID=<�
 Claude Codeに戻って相談する。これが「対話的デバッグ」の体験。
 
 ```bash
-claude
+# -c オプションで前の会話を継続
+claude -c
 
 # エラーを貼り付け
 > 以下のエラーが出た。修正して。
 > <エラーメッセージ>
 ```
+
+**学習ポイント**: `claude -c`で直前のセッションを継続できる。コンテキストが引き継がれるため、再度説明する必要がない。
 
 **Phase 2完了チェック**:
 - [ ] ローカルでアプリが起動した
@@ -199,7 +208,8 @@ claude
 ### Step 3-1: 機能追加(1) - 統計表示(7分)
 
 ```bash
-claude
+# 前の会話を継続
+claude -c
 ```
 
 ```
@@ -225,7 +235,7 @@ databricks apps run-local --prepare-environment
 ### Step 3-2: 機能追加(2) - グラフ表示(7分)
 
 ```bash
-claude
+claude -c
 ```
 
 ```
@@ -249,7 +259,7 @@ databricks apps run-local --prepare-environment
 ### Step 3-3: コンテキスト管理(3分)
 
 ```bash
-claude
+claude -c
 ```
 
 ここで**コンテキスト使用量を確認**:
@@ -273,19 +283,22 @@ claude
 ### Step 3-4: 機能追加(3) - エラーハンドリング強化(3分)
 
 ```bash
-# /clearした場合は再起動
-claude
+# /clearした場合は新規セッション、しなかった場合は-cで継続
+claude -c  # または claude
 ```
 
 ```
-@app.py のエラーハンドリングを改善して。
+@app.py のエラーハンドリングを改善して。think hardして考えてから実装して。
 
+考慮すべき点:
 - テーブルへのアクセス権限がない場合のエラーメッセージ
 - SQL実行タイムアウトの処理
 - ユーザーフレンドリーなエラー表示
 
 CLAUDE.mdのセキュリティ要件も確認して対応して。
 ```
+
+**学習ポイント**: `think hard`でExtended Thinkingが発動し、より深く考えてから実装される
 
 **Phase 3完了チェック**:
 - [ ] 統計表示機能が動作する
@@ -414,16 +427,19 @@ Streamlitのsession_stateを使用。
 | スキル | 使用場面 | コマンド/方法 |
 |--------|---------|--------------|
 | CLAUDE.md読み込み確認 | 起動直後 | 「CLAUDE.mdの内容を要約して」 |
+| セッション継続 | /exit後に会話を継続 | `claude -c` |
+| Extended Thinking | 複雑な計画や設計 | `think`, `think hard`, `think harder`, `ultrathink` |
 | コンテキスト使用量確認 | セッション管理 | `/context` |
 | ステータス確認 | 接続確認 | `/status` |
 | ファイル参照 | 特定ファイルを指定 | `@ファイル名` |
 | コンテキストクリア | 長いセッションのリセット | `/clear` |
 | 差分確認 | 変更内容の確認 | 自動表示、y/n/eで応答 |
 | 対話的デバッグ | エラー解決 | エラーを貼り付けて相談 |
-| CLAUDE.md更新 | ノウハウ蓄積 | Claude Codeに追記を依頼 |
+| CLAUDE.md更新 | ノウハウ蓄積 | Claude Codeに追記を依頼、または`#`キー |
 
 ## 次のステップ
 
 - **発展編ワークショップ**: Skills、MCP連携、MLflow Tracing
-- **公式ドキュメント**: https://docs.anthropic.com/claude-code
+- **公式ドキュメント**: https://docs.anthropic.com/en/docs/claude-code
+- **公式ベストプラクティス**: https://www.anthropic.com/engineering/claude-code-best-practices
 - **Databricks Apps**: https://docs.databricks.com/apps
