@@ -2,7 +2,13 @@
 
 ## プロジェクト概要
 
-Unity Catalogのデータを可視化するStreamlitダッシュボードアプリケーション。
+Unity Catalogの`samples`カタログを可視化するStreamlitダッシュボードアプリケーション。
+
+**対象カタログ**: `samples`(tpch, nyctaxi等)
+
+**samplesカタログを使う理由**: 
+- 全ユーザーに読み取り権限があるため、デプロイ後もService Principal権限で問題なくアクセス可能
+- 特別な権限設定が不要
 
 ## 技術スタック
 

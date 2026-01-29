@@ -150,10 +150,10 @@ Conversation: 15.2K tokens    ← 会話履歴のトークン数
 以下のプロンプトを入力:
 
 ```
-Unity Catalogブラウザーアプリを作成して。
+Unity Catalogのsamplesカタログブラウザーアプリを作成して。
 
 要件:
-- カタログ/スキーマ/テーブルをサイドバーで選択
+- samplesカタログのスキーマ/テーブルをサイドバーで選択
 - 選択したテーブルのデータをプレビュー(最大100行)
 - Streamlit使用
 - Databricks SDKの自動認証
@@ -165,6 +165,8 @@ Unity Catalogブラウザーアプリを作成して。
 
 まず計画を説明してから、ファイルを作成して。
 ```
+
+**なぜsamplesカタログか**: `samples`カタログ(tpch, nyctaxi等)は全ユーザーに読み取り権限があります。デプロイ後もService Principal権限で問題なくアクセスできます。
 
 **観察ポイント**:
 - Claude Codeが計画を説明するか
