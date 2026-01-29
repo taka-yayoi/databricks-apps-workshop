@@ -33,7 +33,7 @@
 
 ```bash
 # ワークショップ用リポジトリをクローン
-git clone https://github.com/taka-yayoi/databricks-apps-workshop.git
+git clone https://github.com/<org>/databricks-apps-workshop.git
 cd databricks-apps-workshop
 
 # 構成確認
@@ -45,22 +45,22 @@ ls -la
 - `README.md` - 手順書
 - `app.yaml.example` - 設定テンプレート
 
-### Step 1-2: Claude Code起動とコンテキスト確認(3分)
+### Step 1-2: Claude Code起動とCLAUDE.md読み込み確認(3分)
 
 ```bash
 # Claude Code起動
 claude
 ```
 
-**起動後、すぐに以下を実行**:
+**起動後、CLAUDE.mdが読み込まれているか確認**:
 
 ```
-/context
+CLAUDE.mdの内容を要約して
 ```
 
 **確認ポイント**:
-- CLAUDE.mdが読み込まれていること
-- 利用可能なコンテキスト量を確認
+- Claude CodeがCLAUDE.mdの内容(Databricks Apps、Streamlit、app.yamlのルールなど)を説明できること
+- 説明できれば、CLAUDE.mdは正しく読み込まれている
 
 ```
 /status
@@ -70,13 +70,19 @@ claude
 - 接続しているモデル名(databricks-claude-xxx)
 - Thinking modeの状態
 
-### Step 1-3: CLAUDE.mdの内容を確認(2分)
+### Step 1-3: @参照とコンテキスト確認(2分)
 
 ```
-@CLAUDE.md の内容を要約して。特にapp.yamlのルールを教えて。
+@CLAUDE.md の内容からapp.yamlのルールだけ教えて
 ```
 
-**学習ポイント**: `@ファイル名`で特定ファイルを参照できる
+**学習ポイント**: `@ファイル名`で特定ファイルを明示的に参照できる
+
+```
+/context
+```
+
+**学習ポイント**: コンテキストウィンドウの使用状況を視覚的に確認できる
 
 ### Step 1-4: アプリの基本生成(8分)
 
@@ -367,7 +373,7 @@ https://<workspace>.cloud.databricks.com/apps/uc-browser-<your-name>
 
 | エラー | 原因 | 対処 |
 |--------|------|------|
-| `CLAUDE.md not loaded` | 別ディレクトリで起動 | `cd databricks-apps-workshop`してから再起動 |
+| CLAUDE.mdの内容を説明できない | 別ディレクトリで起動 | `cd databricks-apps-workshop`してから再起動 |
 | `YAML parse error` | app.yamlの構文エラー | Claude Codeに「@app.yaml の構文を検証して」 |
 | `Connection refused` | ポート競合 | 別のターミナルでアプリが動いていないか確認 |
 | `Permission denied` on catalog | Unity Catalog権限不足 | 講師に相談、別のカタログを使用 |
@@ -407,7 +413,8 @@ Streamlitのsession_stateを使用。
 
 | スキル | 使用場面 | コマンド/方法 |
 |--------|---------|--------------|
-| コンテキスト確認 | セッション管理 | `/context` |
+| CLAUDE.md読み込み確認 | 起動直後 | 「CLAUDE.mdの内容を要約して」 |
+| コンテキスト使用量確認 | セッション管理 | `/context` |
 | ステータス確認 | 接続確認 | `/status` |
 | ファイル参照 | 特定ファイルを指定 | `@ファイル名` |
 | コンテキストクリア | 長いセッションのリセット | `/clear` |
