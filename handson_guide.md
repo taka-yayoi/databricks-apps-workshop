@@ -33,7 +33,7 @@
 
 ```bash
 # ワークショップ用リポジトリをクローン
-git clone https://github.com/<org>/databricks-apps-workshop.git
+git clone https://github.com/taka-yayoi/databricks-apps-workshop.git
 cd databricks-apps-workshop
 
 # 構成確認

@@ -37,7 +37,7 @@ cat ~/.claude/settings.json
 ### Step 1: リポジトリのクローン
 
 ```bash
-git clone https://github.com/<your-org>/databricks-apps-workshop.git
+git clone https://github.com/taka-yayoi/databricks-apps-workshop.git
 cd databricks-apps-workshop
 ```
 
