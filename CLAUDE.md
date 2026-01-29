@@ -52,9 +52,9 @@ databricks apps logs <app-name>
 
 ## デプロイ(Databricks Asset Bundles)
 
-デプロイにはDatabricks Asset Bundlesを使用する。リソース設定(SQL Warehouse等)もコードで管理できる。
+YAMLでリソースを定義し、CLIでデプロイする。
 
-### databricks.yml の例
+### databricks.yml
 
 ```yaml
 bundle:
@@ -68,32 +68,28 @@ resources:
       resources:
         - name: sql-warehouse
           sql_warehouse:
-            id: <warehouse-id>
+            id: ${var.warehouse_id}
             permission: CAN_USE
 
 variables:
   warehouse_id:
     description: SQL Warehouse ID
     default: <your-warehouse-id>
+
+targets:
+  dev:
+    default: true
 ```
 
-### デプロイコマンド
+### コマンド
 
 ```bash
-# デプロイ(初回はアプリ作成も含む)
-databricks bundle deploy
-
-# アプリの状態確認
-databricks apps describe <app-name>
-
-# アプリのURL確認
-databricks apps get <app-name> --output json | jq -r '.url'
+databricks bundle deploy   # デプロイ
+databricks bundle run uc-browser  # アプリ起動
+databricks bundle destroy  # 削除
 ```
 
-**Bundlesのメリット**:
-- リソース設定(SQL Warehouse等)をコードで管理
-- UIでの手動設定が不要
-- 環境間(dev/staging/prod)の切り替えが容易
+**トラブル時**: ファイルがデプロイされない場合は`.gitignore`を確認(除外パターンに含まれている可能性)
 
 ## app.yaml のルール
 
@@ -338,12 +334,10 @@ numpy>=1.26.0,<2.0.0
 
 ```
 project/
-├── CLAUDE.md           # このファイル
-├── databricks.yml      # Databricks Asset Bundles設定(デプロイ時に生成)
-├── app.yaml            # Databricks Apps設定
-├── app.py              # メインアプリケーション
-├── requirements.txt    # 依存関係
-└── README.md           # プロジェクト説明
+├── databricks.yml      # Bundle設定
+├── app.yaml            # アプリ起動設定
+├── app.py              # メインアプリ
+└── requirements.txt    # 依存関係
 ```
 
 ## よくあるエラーと対処法
@@ -361,6 +355,7 @@ project/
 | `401 Unauthorized` | 認証エラー | SDK自動認証の設定を確認 |
 | `App deployment failed` (ファイル関連) | 10MB超のファイルがある | 大きなファイルを除外、.gitignoreを確認 |
 | アプリが起動しない(デプロイ後) | app.yamlでポート/アドレス指定 | `--server.port`と`--server.address`を削除 |
+| Bundleでファイルがデプロイされない | `.gitignore`に含まれている | `.gitignore`を確認 |
 
 ## Databricks Apps の制限事項
 
