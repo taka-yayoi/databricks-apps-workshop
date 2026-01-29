@@ -218,6 +218,18 @@ Claude Codeが期待通りに動かない場合の対処法:
 
 ### Step 2-1: ローカル実行を試みる(3分)
 
+**`databricks apps run-local`コマンドとは**:
+- Databricks Appsをローカル環境でテスト実行するコマンド
+- 本番デプロイ前の動作確認に使用
+- ポート8000でアプリを起動(http://localhost:8000)
+
+**主要オプション**:
+| オプション | 説明 |
+|-----------|------|
+| `--prepare-environment` | requirements.txtから依存関係を自動インストール |
+| `--env KEY=VALUE` | 環境変数を渡す(複数指定可) |
+| `--debug` | デバッグモードで詳細ログを表示 |
+
 ```bash
 # Claude Codeを一旦抜ける
 /exit
@@ -466,17 +478,30 @@ cat app.yaml
 
 ### Step 5-2: デプロイ実行
 
+**使用するコマンドの説明**:
+
+| コマンド | 何をするか |
+|----------|-----------|
+| `workspace import-dir` | ローカルのファイルをDatabricksワークスペースにアップロード |
+| `apps create` | Databricks上にアプリのエントリを作成(初回のみ) |
+| `apps deploy` | ワークスペース上のソースコードからアプリをビルド・起動 |
+| `apps describe` | アプリの状態(ACTIVE/PENDING/ERROR等)を確認 |
+
 ```bash
-# ワークスペースにアップロード
+# 1. ワークスペースにアップロード
+#    ローカルのファイル一式をDatabricksワークスペースにコピー
 databricks workspace import-dir . /Workspace/Users/<your-email>/apps/uc-browser-<your-name> --overwrite
 
-# 新規アプリを作成(初回のみ)
+# 2. 新規アプリを作成(初回のみ)
+#    Databricks上にアプリの「箱」を作成
 databricks apps create uc-browser-<your-name>
 
-# デプロイ(ワークスペース上のパスを指定)
+# 3. デプロイ
+#    ワークスペース上のソースコードからアプリをビルドして起動
 databricks apps deploy uc-browser-<your-name> --source-code-path /Workspace/Users/<your-email>/apps/uc-browser-<your-name>
 
-# デプロイ状況確認
+# 4. デプロイ状況確認
+#    状態がACTIVEになるまで待つ(1-2分)
 databricks apps describe uc-browser-<your-name>
 ```
 
