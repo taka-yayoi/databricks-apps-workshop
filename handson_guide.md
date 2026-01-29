@@ -150,7 +150,7 @@ Conversation: 15.2K tokens    ← 会話履歴のトークン数
 以下のプロンプトを入力:
 
 ```
-app/ ディレクトリにUnity Catalogブラウザーアプリを作成して。
+Unity Catalogブラウザーアプリを作成して。
 
 要件:
 - カタログ/スキーマ/テーブルをサイドバーで選択
@@ -159,25 +159,11 @@ app/ ディレクトリにUnity Catalogブラウザーアプリを作成して�
 - Databricks SDKの自動認証
 
 ファイル構成:
-- app/app.py
-- app/app.yaml(CLAUDE.mdのルールに従う)
-- app/requirements.txt(バージョン固定)
+- app.py
+- app.yaml(CLAUDE.mdのルールに従う)
+- requirements.txt(バージョン固定)
 
 まず計画を説明してから、ファイルを作成して。
-```
-
-**なぜ`app/`ディレクトリに作成するのか**:
-デプロイ時に`databricks workspace import-dir`を使うと、指定したディレクトリ内の全ファイルがアップロードされます。ルートで実行すると`.git/`やCLAUDE.mdも含まれてしまうため、アプリファイルは専用ディレクトリに分離します。
-
-```
-databricks-apps-workshop/
-├── .git/              ← アップロードしない
-├── CLAUDE.md          ← アップロードしない
-├── handson_guide.md   ← アップロードしない
-└── app/               ← このディレクトリだけアップロード
-    ├── app.py
-    ├── app.yaml
-    └── requirements.txt
 ```
 
 **観察ポイント**:
@@ -205,6 +191,17 @@ Claude Codeが期待通りに動かない場合の対処法:
 
 **ベストプラクティス**: 同じ問題で2回以上修正しても解決しない場合は、`/clear`して最初からやり直す方が速い。その際、失敗から学んだことを含めた**より具体的なプロンプト**で再開する。
 
+### (参考) シェルコマンドの実行方法
+
+本ハンズオンでは手堅く`/exit`でClaude Codeを抜けてからCLIを実行しますが、実際には抜けずに実行する方法もあります:
+
+| 方法 | 説明 |
+|------|------|
+| 直接入力 | `databricks apps describe my-app` と入力するとClaudeが認識して実行 |
+| `!`プレフィックス | `! databricks apps describe my-app` で即座にシェルに渡して実行 |
+
+`run-local`のようにフォアグラウンドで動き続けるコマンドは`/exit`が必要ですが、`deploy`や`describe`のようにすぐ完了するコマンドはClaude Code内から実行できます。
+
 ### 具体的なプロンプトの重要性
 
 曖昧な指示は曖昧な結果を生みます。
@@ -222,9 +219,9 @@ Claude Codeが期待通りに動かない場合の対処法:
 - CLAUDE.mdのどのルールに従うか
 
 **Phase 1完了チェック**:
-- [ ] app/app.py が生成された
-- [ ] app/app.yaml が正しい形式(commandがリスト、envがname/value)
-- [ ] app/requirements.txt にバージョンが固定されている
+- [ ] app.py が生成された
+- [ ] app.yaml が正しい形式(commandがリスト、envがname/value)
+- [ ] requirements.txt にバージョンが固定されている
 
 ## Phase 2: 意図的なエラーとデバッグ体験(15分)
 
@@ -248,8 +245,8 @@ Claude Codeが期待通りに動かない場合の対処法:
 # Claude Codeを一旦抜ける
 /exit
 
-# appディレクトリでローカル実行(サブシェルで実行するとディレクトリが戻る)
-(cd app && databricks apps run-local --prepare-environment)
+# ローカル実行
+databricks apps run-local --prepare-environment
 ```
 
 **予想されるエラー**: app.yamlの`valueFrom`がローカルで解決できない
@@ -286,8 +283,8 @@ Claude Codeの提案に従って修正。`--env`フラグでWarehouse IDを渡�
 ```bash
 /exit
 
-# Warehouse IDを指定してローカル実行
-(cd app && databricks apps run-local --prepare-environment --env DATABRICKS_WAREHOUSE_ID=<あなたのWarehouse ID>)
+# --envフラグでWarehouse IDを渡してローカル実行
+databricks apps run-local --prepare-environment --env DATABRICKS_WAREHOUSE_ID=<あなたのWarehouse ID>
 ```
 
 **学習ポイント**: app.yamlの`valueFrom`はDatabricks Apps環境で自動解決されるが、ローカルでは`--env`で明示的に渡す必要がある
@@ -343,7 +340,7 @@ claude -c
 **ローカルで確認**:
 ```bash
 /exit
-(cd app && databricks apps run-local --prepare-environment)
+databricks apps run-local --prepare-environment
 ```
 
 ### Step 3-2: 機能追加(2) - グラフ表示(7分)
@@ -367,7 +364,7 @@ claude -c
 **確認**(requirements.txtが変更されたので再度--prepare-environment):
 ```bash
 /exit
-(cd app && databricks apps run-local --prepare-environment)
+databricks apps run-local --prepare-environment
 ```
 
 ### Step 3-3: コンテキスト管理(3分)
@@ -503,10 +500,10 @@ Extended Thinkingのトグル方法は**Claude Codeのバージョンによっ�
 /exit
 
 # ファイル一覧確認
-ls -la app/
+ls -la
 
 # app.yamlの内容確認
-cat app/app.yaml
+cat app.yaml
 ```
 
 ### Step 5-2: デプロイ実行
@@ -515,15 +512,14 @@ cat app/app.yaml
 
 | コマンド | 何をするか |
 |----------|-----------|
-| `workspace import-dir` | ローカルのファイルをDatabricksワークスペースにアップロード |
+| `sync` | ローカルファイルをワークスペースに同期(`.gitignore`を尊重) |
 | `apps create` | Databricks上にアプリのエントリを作成(初回のみ) |
 | `apps deploy` | ワークスペース上のソースコードからアプリをビルド・起動 |
 | `apps describe` | アプリの状態(ACTIVE/PENDING/ERROR等)を確認 |
 
 ```bash
-# 1. app/ディレクトリをワークスペースにアップロード
-#    (.git/やCLAUDE.mdは含まれない)
-databricks workspace import-dir app /Workspace/Users/<your-email>/apps/uc-browser-<your-name> --overwrite
+# 1. ワークスペースに同期(.gitignoreに書かれた.venv等は除外される)
+databricks sync . /Workspace/Users/<your-email>/apps/uc-browser-<your-name>
 
 # 2. 新規アプリを作成(初回のみ)
 databricks apps create uc-browser-<your-name>
@@ -536,7 +532,7 @@ databricks apps describe uc-browser-<your-name>
 ```
 
 **注意**: 
-- `deploy`はローカルからの直接デプロイではない。先に`workspace import-dir`でアップロードが必要
+- `sync`は`.gitignore`を尊重するので、`.venv/`や`__pycache__/`は自動的に除外される
 - UIからアプリを作成した場合、作成時に表示されるコマンドをコピーして使用可能
 
 ### Step 5-3: 動作確認
