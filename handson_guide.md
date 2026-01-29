@@ -33,7 +33,7 @@
 
 ```bash
 # ワークショップ用リポジトリをクローン
-git clone https://github.com/<org>/databricks-apps-workshop.git
+git clone https://github.com/taka-yayoi/databricks-apps-workshop.git
 cd databricks-apps-workshop
 
 # 構成確認
@@ -127,9 +127,9 @@ Unity Catalogブラウザーアプリを作成して。
 
 ```bash
 # Claude Codeを一旦抜ける
-# Ctrl+C または /exit
+/exit
 
-# ローカル実行
+# ローカル実行(--prepare-environmentで依存関係を自動インストール)
 databricks apps run-local --prepare-environment
 ```
 
@@ -222,7 +222,7 @@ claude
 **ローカルで確認**:
 ```bash
 /exit
-databricks apps run-local
+databricks apps run-local --prepare-environment
 ```
 
 ### Step 3-2: 機能追加(2) - グラフ表示(7分)
@@ -243,10 +243,10 @@ claude
 
 **学習ポイント**: 複数ファイルの同時変更
 
-**確認**:
+**確認**(requirements.txtが変更されたので再度--prepare-environment):
 ```bash
 /exit
-databricks apps run-local
+databricks apps run-local --prepare-environment
 ```
 
 ### Step 3-3: コンテキスト管理(3分)
@@ -373,6 +373,8 @@ https://<workspace>.cloud.databricks.com/apps/uc-browser-<your-name>
 
 | エラー | 原因 | 対処 |
 |--------|------|------|
+| `streamlit: executable file not found` | 依存関係未インストール | `--prepare-environment`を付けて実行 |
+| `ModuleNotFoundError: streamlit` | 依存関係未インストール | `--prepare-environment`を付けて実行 |
 | CLAUDE.mdの内容を説明できない | 別ディレクトリで起動 | `cd databricks-apps-workshop`してから再起動 |
 | `YAML parse error` | app.yamlの構文エラー | Claude Codeに「@app.yaml の構文を検証して」 |
 | `Connection refused` | ポート競合 | 別のターミナルでアプリが動いていないか確認 |

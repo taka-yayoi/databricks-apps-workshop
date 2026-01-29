@@ -14,8 +14,11 @@ Unity Catalogのデータを可視化するStreamlitダッシュボードアプ�
 ## 開発コマンド
 
 ```bash
-# ローカル実行
-databricks apps run-local
+# ローカル実行(初回は--prepare-environmentで仮想環境を自動作成)
+databricks apps run-local --prepare-environment
+
+# 環境変数を追加してローカル実行
+databricks apps run-local --prepare-environment --env DATABRICKS_WAREHOUSE_ID=xxx
 
 # デプロイ
 databricks apps deploy <app-name>
@@ -23,6 +26,8 @@ databricks apps deploy <app-name>
 # ログ確認
 databricks apps logs <app-name>
 ```
+
+**重要**: `--prepare-environment`を付けないと、streamlit等の依存関係がインストールされていない状態で実行され、`executable file not found`エラーになる。
 
 ## app.yaml のルール
 
@@ -125,9 +130,10 @@ def get_sql_connection():
 
 ```txt
 streamlit==1.45.0
-databricks-sdk==0.20.0
-databricks-sql-connector==3.1.0
-pandas==2.0.3
+databricks-sdk==0.55.0
+databricks-sql-connector==4.0.0
+pandas==2.2.3
+numpy>=1.26.0,<2.0.0
 ```
 
 ## ディレクトリ構造
@@ -145,6 +151,7 @@ project/
 
 | エラー | 原因 | 対処法 |
 |-------|------|--------|
+| `streamlit: executable file not found` | 依存関係未インストール | `--prepare-environment`を付けて実行 |
 | `YAML parse error` | app.yamlの構文エラー | command/envの形式を確認 |
 | `ModuleNotFoundError` | 依存関係不足 | requirements.txtを確認 |
 | `Connection refused` | ポート不一致 | --server.port=8000を確認 |

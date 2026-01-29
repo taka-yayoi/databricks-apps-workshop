@@ -10,7 +10,7 @@ Claude Codeを使ってDatabricks Appsを開発するハンズオンワークシ
 - Python 3.10以上
 - Claude Code CLI (`npm install -g @anthropic-ai/claude-code`)
 - Databricks CLI v0.250.0以上
-- Databricks認証設定済み (`~/.claude/settings.json`)
+- Claude Code認証設定済み (`~/.claude/settings.json`にDatabricks Model Serving設定)
 
 ### 環境確認コマンド
 
@@ -24,8 +24,9 @@ databricks --version
 # Python
 python --version
 
-# 認証設定
+# Claude Code認証設定
 cat ~/.claude/settings.json
+# ANTHROPIC_MODEL, ANTHROPIC_BASE_URL, ANTHROPIC_AUTH_TOKEN が設定されていること
 ```
 
 ## ハンズオン手順
@@ -87,7 +88,7 @@ Unity Catalogブラウザーアプリを作成して。
 ### Step 5: ローカル実行
 
 ```bash
-databricks apps run-local
+databricks apps run-local --prepare-environment
 ```
 
 ブラウザで http://localhost:8000 を開いて動作確認。
@@ -107,9 +108,7 @@ databricks-apps-workshop/
 ├── README.md                 # このファイル
 ├── handson_guide.md          # 詳細ハンズオン手順
 ├── app.yaml.example          # 設定ファイルの雛形
-├── requirements.txt.example  # 依存関係の雛形
-└── docs/
-    └── CLAUDE_reference.md   # フル版ベストプラクティス(参考資料)
+└── requirements.txt.example  # 依存関係の雛形
 ```
 
 ## 参考資料
