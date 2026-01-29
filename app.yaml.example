@@ -1,0 +1,33 @@
+# Databricks Apps 設定ファイル
+# このファイルをapp.yamlにリネームして使用してください
+
+# コマンドは必ずリスト形式で記述
+command:
+  - streamlit
+  - run
+  - app.py
+  - --server.port=8000
+  - --server.address=0.0.0.0
+
+# 環境変数はname/valueペアのリストで記述
+env:
+  # Databricksリソースを参照する場合はvalueFrom
+  - name: DATABRICKS_WAREHOUSE_ID
+    valueFrom: sql-warehouse-id
+  
+  # 固定値の場合はvalue
+  - name: LOG_LEVEL
+    value: INFO
+  
+  # カタログ名(環境に合わせて変更)
+  - name: CATALOG_NAME
+    value: main
+  
+  # スキーマ名(環境に合わせて変更)  
+  - name: SCHEMA_NAME
+    value: default
+
+# valueFromで使用できるリソースタイプ:
+# - sql-warehouse-id: SQL Warehouse ID
+# - serving-endpoint-name: Model Serving エンドポイント名
+# - secret: Databricks Secret (scope/key形式)

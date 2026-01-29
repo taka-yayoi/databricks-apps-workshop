@@ -1,0 +1,20 @@
+# Databricks Apps + Streamlit 依存関係
+# このファイルをrequirements.txtにリネームして使用してください
+# バージョンは必ず固定すること
+
+# Web フレームワーク
+streamlit==1.45.0
+
+# Databricks SDK
+databricks-sdk==0.20.0
+databricks-sql-connector==3.1.0
+
+# データ処理
+pandas==2.0.3
+
+# オプション: 可視化
+# plotly==5.18.0
+# altair==5.2.0
+
+# オプション: 追加ユーティリティ
+# python-dotenv==1.0.0
