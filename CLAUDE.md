@@ -11,6 +11,22 @@ Unity Catalogのデータを可視化するStreamlitダッシュボードアプ�
 - Databricks SDK (databricks-sdk)
 - Databricks SQL Connector (databricks-sql-connector)
 
+**重要: Databricks AppsではSparkSessionは使用不可**
+
+Databricks Appsはコンテナベースの軽量ランタイムで、Sparkドライバー/JVMが含まれていません。
+
+```python
+# ❌ 絶対にやってはいけない - JAVA_GATEWAY_EXITEDエラーになる
+from pyspark.sql import SparkSession
+spark = SparkSession.builder.appName("MyApp").getOrCreate()
+
+# ✅ 代わりにDatabricks SQL Connectorを使用
+from databricks import sql
+from databricks.sdk.core import Config
+```
+
+データアクセスには必ずSQL Warehouse経由の`databricks-sql-connector`を使用してください。
+
 ## 開発コマンド
 
 ```bash
@@ -97,6 +113,112 @@ w = WorkspaceClient()
 token = "dapi_xxxxxxxxxxxxx"
 ```
 
+### databricks-sql-connectorの認証(重要)
+
+**Databricks Apps環境での正しいパターン**:
+
+```python
+from databricks import sql
+from databricks.sdk.core import Config
+import os
+
+@st.cache_resource
+def get_sql_connection():
+    cfg = Config()  # WorkspaceClientではなくConfigを使う
+    return sql.connect(
+        server_hostname=cfg.host,
+        http_path=f"/sql/1.0/warehouses/{os.getenv('DATABRICKS_WAREHOUSE_ID')}",
+        credentials_provider=lambda: cfg.authenticate,  # lambdaでラップ必須
+    )
+```
+
+**よくある間違い**:
+
+```python
+# ❌ 間違い1: WorkspaceClient.config.authenticateを直接渡す
+w = WorkspaceClient()
+conn = sql.connect(
+    server_hostname=w.config.host,
+    credentials_provider=w.config.authenticate,  # エラー: 'dict' object is not callable
+)
+
+# ❌ 間違い2: lambdaなしで渡す
+cfg = Config()
+conn = sql.connect(
+    credentials_provider=cfg.authenticate,  # エラー: 'NoneType' object is not callable
+)
+
+# ✅ 正しい: Configを使い、lambdaでラップする
+cfg = Config()
+conn = sql.connect(
+    server_hostname=cfg.host,
+    http_path=f"/sql/1.0/warehouses/{os.getenv('DATABRICKS_WAREHOUSE_ID')}",
+    credentials_provider=lambda: cfg.authenticate,
+)
+```
+
+**ポイント**:
+- `WorkspaceClient`ではなく`databricks.sdk.core.Config`を使用
+- `credentials_provider`には`lambda: cfg.authenticate`の形式で渡す(lambdaでラップ必須)
+- `cfg.authenticate`は呼び出し時にヘッダー辞書を返すメソッド
+
+## Unity Catalogアクセスパターン
+
+### カタログ/スキーマ/テーブル一覧の取得
+
+Unity Catalogのメタデータ取得には`WorkspaceClient`を使用します。
+
+```python
+from databricks.sdk import WorkspaceClient
+import streamlit as st
+
+@st.cache_resource
+def get_workspace_client():
+    return WorkspaceClient()
+
+def get_catalogs():
+    w = get_workspace_client()
+    return [c.name for c in w.catalogs.list()]
+
+def get_schemas(catalog_name):
+    w = get_workspace_client()
+    return [s.name for s in w.schemas.list(catalog_name=catalog_name)]
+
+def get_tables(catalog_name, schema_name):
+    w = get_workspace_client()
+    return [t.name for t in w.tables.list(catalog_name=catalog_name, schema_name=schema_name)]
+```
+
+### テーブルデータの取得
+
+テーブルのデータ取得には`databricks-sql-connector`を使用します。
+
+```python
+from databricks import sql
+from databricks.sdk.core import Config
+import os
+import streamlit as st
+
+@st.cache_resource
+def get_sql_connection():
+    cfg = Config()
+    return sql.connect(
+        server_hostname=cfg.host,
+        http_path=f"/sql/1.0/warehouses/{os.getenv('DATABRICKS_WAREHOUSE_ID')}",
+        credentials_provider=lambda: cfg.authenticate,
+    )
+
+def get_table_data(catalog, schema, table, limit=100):
+    conn = get_sql_connection()
+    with conn.cursor() as cursor:
+        # パラメータ化クエリは識別子には使えないため、許可リストで検証
+        query = f"SELECT * FROM `{catalog}`.`{schema}`.`{table}` LIMIT {limit}"
+        cursor.execute(query)
+        return cursor.fetchall_arrow().to_pandas()
+```
+
+**注意**: テーブル名などの識別子はSQLパラメータ化できないため、ユーザー入力をそのまま使う場合は許可リストで検証するか、選択式UIを使用してください。
+
 ## Streamlit のベストプラクティス
 
 ### st.set_page_config() は最初に呼び出す
@@ -117,13 +239,23 @@ st.set_page_config(
 ### 接続はキャッシュする
 
 ```python
+from databricks.sdk import WorkspaceClient
+from databricks.sdk.core import Config
+from databricks import sql
+import os
+
 @st.cache_resource
 def get_workspace_client():
     return WorkspaceClient()
 
 @st.cache_resource
 def get_sql_connection():
-    return sql.connect(...)
+    cfg = Config()
+    return sql.connect(
+        server_hostname=cfg.host,
+        http_path=f"/sql/1.0/warehouses/{os.getenv('DATABRICKS_WAREHOUSE_ID')}",
+        credentials_provider=lambda: cfg.authenticate,
+    )
 ```
 
 ## requirements.txt のルール
@@ -153,9 +285,23 @@ project/
 
 | エラー | 原因 | 対処法 |
 |-------|------|--------|
+| `JAVA_GATEWAY_EXITED` | SparkSessionを使用しようとした | Databricks AppsではSparkは使用不可。SQL Connectorを使用 |
 | `streamlit: executable file not found` | 依存関係未インストール | `--prepare-environment`を付けて実行 |
 | `valueFrom property and can't be resolved locally` | valueFromはローカルで解決不可 | `--env VAR_NAME=value`で環境変数を渡す |
+| `'dict' object is not callable` | SQL Connectorの認証設定ミス | `credentials_provider=lambda: cfg.authenticate`の形式で渡す |
+| `'NoneType' object is not callable` | SQL Connectorの認証設定ミス | `Config()`を使い、lambdaでラップする |
 | `YAML parse error` | app.yamlの構文エラー | command/envの形式を確認 |
 | `ModuleNotFoundError` | 依存関係不足 | requirements.txtを確認 |
 | `Connection refused` | ポート不一致 | --server.port=8000を確認 |
 | `401 Unauthorized` | 認証エラー | SDK自動認証の設定を確認 |
+| `App deployment failed` (ファイル関連) | 10MB超のファイルがある | 大きなファイルを除外、.gitignoreを確認 |
+
+## Databricks Apps の制限事項
+
+| 制限 | 詳細 |
+|------|------|
+| **SparkSession使用不可** | コンテナにSparkランタイムなし。SQL Connector必須 |
+| **ファイルサイズ** | 1ファイルあたり10MB以下 |
+| **認証** | Databricksユーザー認証必須(匿名アクセス不可) |
+| **ポート** | 8000番ポートで起動する必要あり |
+| **接続タイムアウト** | SQL Warehouseがアイドル停止すると接続が切れる可能性あり |
