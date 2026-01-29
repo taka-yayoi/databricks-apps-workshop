@@ -150,7 +150,7 @@ Conversation: 15.2K tokens    ← 会話履歴のトークン数
 以下のプロンプトを入力:
 
 ```
-Unity Catalogブラウザーアプリを作成して。
+app/ ディレクトリにUnity Catalogブラウザーアプリを作成して。
 
 要件:
 - カタログ/スキーマ/テーブルをサイドバーで選択
@@ -159,11 +159,25 @@ Unity Catalogブラウザーアプリを作成して。
 - Databricks SDKの自動認証
 
 ファイル構成:
-- app.py
-- app.yaml(CLAUDE.mdのルールに従う)
-- requirements.txt(バージョン固定)
+- app/app.py
+- app/app.yaml(CLAUDE.mdのルールに従う)
+- app/requirements.txt(バージョン固定)
 
 まず計画を説明してから、ファイルを作成して。
+```
+
+**なぜ`app/`ディレクトリに作成するのか**:
+デプロイ時に`databricks workspace import-dir`を使うと、指定したディレクトリ内の全ファイルがアップロードされます。ルートで実行すると`.git/`やCLAUDE.mdも含まれてしまうため、アプリファイルは専用ディレクトリに分離します。
+
+```
+databricks-apps-workshop/
+├── .git/              ← アップロードしない
+├── CLAUDE.md          ← アップロードしない
+├── handson_guide.md   ← アップロードしない
+└── app/               ← このディレクトリだけアップロード
+    ├── app.py
+    ├── app.yaml
+    └── requirements.txt
 ```
 
 **観察ポイント**:
@@ -208,9 +222,9 @@ Claude Codeが期待通りに動かない場合の対処法:
 - CLAUDE.mdのどのルールに従うか
 
 **Phase 1完了チェック**:
-- [ ] app.py が生成された
-- [ ] app.yaml が正しい形式(commandがリスト、envがname/value)
-- [ ] requirements.txt にバージョンが固定されている
+- [ ] app/app.py が生成された
+- [ ] app/app.yaml が正しい形式(commandがリスト、envがname/value)
+- [ ] app/requirements.txt にバージョンが固定されている
 
 ## Phase 2: 意図的なエラーとデバッグ体験(15分)
 
@@ -234,8 +248,8 @@ Claude Codeが期待通りに動かない場合の対処法:
 # Claude Codeを一旦抜ける
 /exit
 
-# ローカル実行(--prepare-environmentで依存関係を自動インストール)
-databricks apps run-local --prepare-environment
+# appディレクトリでローカル実行(サブシェルで実行するとディレクトリが戻る)
+(cd app && databricks apps run-local --prepare-environment)
 ```
 
 **予想されるエラー**: app.yamlの`valueFrom`がローカルで解決できない
@@ -272,8 +286,8 @@ Claude Codeの提案に従って修正。`--env`フラグでWarehouse IDを渡�
 ```bash
 /exit
 
-# --envフラグでWarehouse IDを渡してローカル実行
-databricks apps run-local --prepare-environment --env DATABRICKS_WAREHOUSE_ID=<あなたのWarehouse ID>
+# Warehouse IDを指定してローカル実行
+(cd app && databricks apps run-local --prepare-environment --env DATABRICKS_WAREHOUSE_ID=<あなたのWarehouse ID>)
 ```
 
 **学習ポイント**: app.yamlの`valueFrom`はDatabricks Apps環境で自動解決されるが、ローカルでは`--env`で明示的に渡す必要がある
@@ -329,7 +343,7 @@ claude -c
 **ローカルで確認**:
 ```bash
 /exit
-databricks apps run-local --prepare-environment
+(cd app && databricks apps run-local --prepare-environment)
 ```
 
 ### Step 3-2: 機能追加(2) - グラフ表示(7分)
@@ -353,7 +367,7 @@ claude -c
 **確認**(requirements.txtが変更されたので再度--prepare-environment):
 ```bash
 /exit
-databricks apps run-local --prepare-environment
+(cd app && databricks apps run-local --prepare-environment)
 ```
 
 ### Step 3-3: コンテキスト管理(3分)
@@ -400,11 +414,18 @@ CLAUDE.mdのセキュリティ要件も確認して対応して。
 
 **Extended Thinkingについて**:
 
-Claude Code v2.0以降、Extended Thinkingは**Tabキーでトグル**が主な有効化方法です。
+Extended Thinkingのトグル方法は**Claude Codeのバージョンによって異なります**:
+
+| バージョン | トグル方法 |
+|-----------|-----------|
+| v2.0.x | `Tab` |
+| v2.1.x以降 | `meta+t`(macOS: `Option+T`、Windows/Linux: `Alt+T`) |
 
 ```
-Tab → "Thinking on" と表示される → 深い思考が有効化
+# どちらかを押す → "Thinking on" と表示される → 深い思考が有効化
 ```
+
+**ヒント**: `?`を押すと現在のバージョンで使えるショートカットが表示される
 
 **強調フレーズの効果**:
 | フレーズ | 効果 |
@@ -433,6 +454,18 @@ Tab → "Thinking on" と表示される → 深い思考が有効化
 
 ### Step 4-1: 学んだことを追記
 
+**方法1: `#`キーによるクイック追記**(推奨)
+
+`#`で始めると、Claude Codeが自動的にCLAUDE.mdに追記します:
+
+```
+# DATABRICKS_WAREHOUSE_IDはローカル実行時に--envで渡す必要がある
+```
+
+→ Project-level(プロジェクトのCLAUDE.md)かUser-level(~/.claude/CLAUDE.md)を選択
+
+**方法2: 直接編集を依頼**
+
 ```
 @CLAUDE.md に以下のセクションを追加して。
 
@@ -440,7 +473,7 @@ Tab → "Thinking on" と表示される → 深い思考が有効化
 
 ### SQL Warehouse関連
 - DATABRICKS_WAREHOUSE_IDは環境変数で設定が必要
-- statement_execution APIはwarehous_idが必須パラメータ
+- statement_execution APIはwarehouse_idが必須パラメータ
 
 ### Streamlit関連
 - 重い処理には@st.cache_resourceを使用
@@ -470,10 +503,10 @@ Tab → "Thinking on" と表示される → 深い思考が有効化
 /exit
 
 # ファイル一覧確認
-ls -la
+ls -la app/
 
 # app.yamlの内容確認
-cat app.yaml
+cat app/app.yaml
 ```
 
 ### Step 5-2: デプロイ実行
@@ -488,20 +521,17 @@ cat app.yaml
 | `apps describe` | アプリの状態(ACTIVE/PENDING/ERROR等)を確認 |
 
 ```bash
-# 1. ワークスペースにアップロード
-#    ローカルのファイル一式をDatabricksワークスペースにコピー
-databricks workspace import-dir . /Workspace/Users/<your-email>/apps/uc-browser-<your-name> --overwrite
+# 1. app/ディレクトリをワークスペースにアップロード
+#    (.git/やCLAUDE.mdは含まれない)
+databricks workspace import-dir app /Workspace/Users/<your-email>/apps/uc-browser-<your-name> --overwrite
 
 # 2. 新規アプリを作成(初回のみ)
-#    Databricks上にアプリの「箱」を作成
 databricks apps create uc-browser-<your-name>
 
 # 3. デプロイ
-#    ワークスペース上のソースコードからアプリをビルドして起動
 databricks apps deploy uc-browser-<your-name> --source-code-path /Workspace/Users/<your-email>/apps/uc-browser-<your-name>
 
-# 4. デプロイ状況確認
-#    状態がACTIVEになるまで待つ(1-2分)
+# 4. デプロイ状況確認(状態がACTIVEになるまで待つ)
 databricks apps describe uc-browser-<your-name>
 ```
 
@@ -597,7 +627,7 @@ Streamlitのsession_stateを使用。
 |--------|---------|--------------|
 | CLAUDE.md読み込み確認 | 起動直後 | 「CLAUDE.mdの内容を要約して」 |
 | セッション継続 | /exit後に会話を継続 | `claude -c` |
-| Extended Thinking | 複雑な計画や設計 | `Tab`でトグル、または`think hard`等のフレーズ |
+| Extended Thinking | 複雑な計画や設計 | `meta+t`または`Tab`でトグル(バージョンによる)、`think hard`等のフレーズ |
 | コンテキスト使用量確認 | セッション管理 | `/context` |
 | ステータス確認 | 接続確認 | `/status` |
 | ファイル参照 | 特定ファイルを指定 | `@ファイル名` |

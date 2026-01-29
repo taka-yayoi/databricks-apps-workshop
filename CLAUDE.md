@@ -30,14 +30,14 @@ from databricks.sdk.core import Config
 ## 開発コマンド
 
 ```bash
-# ローカル実行(初回は--prepare-environmentで仮想環境を自動作成)
-databricks apps run-local --prepare-environment
+# ローカル実行(app/ディレクトリで実行、初回は--prepare-environmentで仮想環境を自動作成)
+(cd app && databricks apps run-local --prepare-environment)
 
 # 環境変数を追加してローカル実行(valueFromはローカルで解決できないため--envで渡す)
-databricks apps run-local --prepare-environment --env DATABRICKS_WAREHOUSE_ID=xxx
+(cd app && databricks apps run-local --prepare-environment --env DATABRICKS_WAREHOUSE_ID=xxx)
 
-# ワークスペースにアップロード
-databricks workspace import-dir . /Workspace/Users/<your-email>/apps/<app-name> --overwrite
+# app/ディレクトリをワークスペースにアップロード(.git/やCLAUDE.mdは含まれない)
+databricks workspace import-dir app /Workspace/Users/<your-email>/apps/<app-name> --overwrite
 
 # 新規アプリ作成(初回のみ、UIで作成することも可能)
 databricks apps create <app-name>
@@ -293,12 +293,15 @@ numpy>=1.26.0,<2.0.0
 
 ```
 project/
-├── CLAUDE.md           # このファイル
-├── app.yaml            # Databricks Apps設定
-├── app.py              # メインアプリケーション
-├── requirements.txt    # 依存関係
+├── CLAUDE.md           # このファイル(アプリと一緒にアップロードしない)
+├── app/                # アプリファイル(このディレクトリをアップロード)
+│   ├── app.yaml        # Databricks Apps設定
+│   ├── app.py          # メインアプリケーション
+│   └── requirements.txt # 依存関係
 └── README.md           # プロジェクト説明
 ```
+
+**重要**: デプロイ時は`app/`ディレクトリだけをアップロードします。これにより`.git/`やCLAUDE.mdを含めずに済みます。
 
 ## よくあるエラーと対処法
 
