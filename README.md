@@ -96,9 +96,11 @@ databricks apps run-local --prepare-environment
 ### Step 6: デプロイ
 
 ```bash
-# アプリ名は各自ユニークな名前に変更
-databricks apps deploy uc-browser-<your-name>
+# Databricks Asset Bundlesでデプロイ
+databricks bundle deploy
 ```
+
+詳細な手順は [handson_guide.md](handson_guide.md) のPhase 5を参照してください。
 
 ## リポジトリ構成
 
