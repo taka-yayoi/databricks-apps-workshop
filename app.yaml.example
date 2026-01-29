@@ -2,12 +2,12 @@
 # このファイルをapp.yamlにリネームして使用してください
 
 # コマンドは必ずリスト形式で記述
+# 注意: --server.port や --server.address は指定しない
+# (Databricks Apps環境で自動設定される)
 command:
   - streamlit
   - run
   - app.py
-  - --server.port=8000
-  - --server.address=0.0.0.0
 
 # 環境変数はname/valueペアのリストで記述
 env:

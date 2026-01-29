@@ -36,20 +36,27 @@ databricks apps run-local --prepare-environment
 # 環境変数を追加してローカル実行(valueFromはローカルで解決できないため--envで渡す)
 databricks apps run-local --prepare-environment --env DATABRICKS_WAREHOUSE_ID=xxx
 
-# デプロイ
-databricks apps deploy <app-name>
+# ワークスペースにアップロード
+databricks workspace import-dir . /Workspace/Users/<your-email>/apps/<app-name> --overwrite
+
+# 新規アプリ作成(初回のみ、UIで作成することも可能)
+databricks apps create <app-name>
+
+# デプロイ(ワークスペース上のパスを指定)
+databricks apps deploy <app-name> --source-code-path /Workspace/Users/<your-email>/apps/<app-name>
 
 # ログ確認
 databricks apps logs <app-name>
 ```
 
 **重要**: 
+- `databricks apps deploy`はローカルからの直接デプロイではない。先に`workspace import-dir`でワークスペースにアップロードが必要
 - `--prepare-environment`を付けないと、streamlit等の依存関係がインストールされていない状態で実行され、`executable file not found`エラーになる
 - app.yamlで`valueFrom`を使用している環境変数は、ローカル実行時に`--env`フラグで明示的に渡す必要がある
 
 ## app.yaml のルール
 
-### command は必ずリスト形式
+### command は必ずリスト形式(ポート/アドレス指定禁止)
 
 ```yaml
 # ✅ 正しい
@@ -57,12 +64,24 @@ command:
   - streamlit
   - run
   - app.py
-  - --server.port=8000
-  - --server.address=0.0.0.0
 
-# ❌ 間違い
+# ❌ 間違い: 文字列形式
 command: "streamlit run app.py"
+
+# ❌ 間違い: ポート/アドレス指定(Databricks Apps環境では自動設定される)
+command:
+  - streamlit
+  - run
+  - app.py
+  - --server.port=8000      # 指定禁止
+  - --server.address=0.0.0.0  # 指定禁止
 ```
+
+**重要**: Databricks Apps環境では以下の環境変数が自動設定され、**オーバーライド禁止**:
+- `STREAMLIT_SERVER_PORT`: `DATABRICKS_APP_PORT`に設定
+- `STREAMLIT_SERVER_ADDRESS`: `0.0.0.0`に設定
+
+ローカル実行時は`databricks apps run-local`がポート8000で自動起動するため、app.yamlでのポート指定は不要。
 
 ### env は name/value ペアのリスト
 
@@ -285,6 +304,8 @@ project/
 
 | エラー | 原因 | 対処法 |
 |-------|------|--------|
+| `App with name xxx does not exist` | 新規アプリにdeployを実行 | 先に`databricks apps create <app-name>`を実行 |
+| `Source code path must be a valid workspace path` | ローカルパスを指定 | 先に`workspace import-dir`でアップロードしてからワークスペースパスを指定 |
 | `JAVA_GATEWAY_EXITED` | SparkSessionを使用しようとした | Databricks AppsではSparkは使用不可。SQL Connectorを使用 |
 | `streamlit: executable file not found` | 依存関係未インストール | `--prepare-environment`を付けて実行 |
 | `valueFrom property and can't be resolved locally` | valueFromはローカルで解決不可 | `--env VAR_NAME=value`で環境変数を渡す |
@@ -292,9 +313,10 @@ project/
 | `'NoneType' object is not callable` | SQL Connectorの認証設定ミス | `Config()`を使い、lambdaでラップする |
 | `YAML parse error` | app.yamlの構文エラー | command/envの形式を確認 |
 | `ModuleNotFoundError` | 依存関係不足 | requirements.txtを確認 |
-| `Connection refused` | ポート不一致 | --server.port=8000を確認 |
+| `Connection refused` (ローカル) | アプリが起動していない | `databricks apps run-local`を実行 |
 | `401 Unauthorized` | 認証エラー | SDK自動認証の設定を確認 |
 | `App deployment failed` (ファイル関連) | 10MB超のファイルがある | 大きなファイルを除外、.gitignoreを確認 |
+| アプリが起動しない(デプロイ後) | app.yamlでポート/アドレス指定 | `--server.port`と`--server.address`を削除 |
 
 ## Databricks Apps の制限事項
 
@@ -303,5 +325,6 @@ project/
 | **SparkSession使用不可** | コンテナにSparkランタイムなし。SQL Connector必須 |
 | **ファイルサイズ** | 1ファイルあたり10MB以下 |
 | **認証** | Databricksユーザー認証必須(匿名アクセス不可) |
-| **ポート** | 8000番ポートで起動する必要あり |
+| **ポート/アドレス指定禁止** | `STREAMLIT_SERVER_PORT`と`STREAMLIT_SERVER_ADDRESS`は自動設定。app.yamlでオーバーライド禁止 |
 | **接続タイムアウト** | SQL Warehouseがアイドル停止すると接続が切れる可能性あり |
+| **デプロイ方式** | ローカルから直接デプロイ不可。先にワークスペースにアップロードが必要 |

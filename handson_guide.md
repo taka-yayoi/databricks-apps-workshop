@@ -25,12 +25,27 @@
 | Python | `python --version` | 3.10以上 |
 | Git | `git --version` | バージョン番号が表示 |
 
-**SQL Warehouse ID**: Databricksワークスペースで確認
+**SQL Warehouse ID**: Databricksワークスペースで確認し、**必ずメモしておいてください**
 ```bash
 # Databricks CLIで確認
 databricks warehouses list
 # または Databricks UI > SQL Warehouses > 対象のWarehouse > 詳細からIDをコピー
 ```
+
+**メモしておく情報**:
+- SQL Warehouse ID(例: `abc123def456`)
+- Databricksメールアドレス(ワークスペースパスに使用)
+
+## ハンズオンの実行環境について
+
+**VSCodeは不要です**。このハンズオンはターミナルのみで完結します。
+
+ただし、以下のような開発スタイルも可能です(参考情報):
+- 複数ターミナルを開いて並列作業(1つでClaude Code、1つでアプリ実行)
+- VSCode + Databricks拡張機能での開発
+- VSCode内蔵ターミナルからClaude Code実行
+
+本ハンズオンでは**1つのターミナル**で順番に進めます。
 
 ## Phase 1: プロジェクトセットアップと基本生成(15分)
 
@@ -49,6 +64,29 @@ ls -la
 - `CLAUDE.md` - ベストプラクティス
 - `README.md` - 手順書
 - `app.yaml.example` - 設定テンプレート
+
+### ⚠️ 重要: Claude Codeを起動するディレクトリ
+
+**Claude Codeはカレントディレクトリの`CLAUDE.md`を自動的に読み込みます。**
+
+```bash
+# ✅ 正しい: プロジェクトルートで起動
+cd databricks-apps-workshop
+claude
+
+# ❌ 間違い: 別のディレクトリで起動
+cd ~
+claude  # → CLAUDE.mdが読み込まれない！
+```
+
+**別のディレクトリを操作したい場合**:
+```bash
+# 方法1: --add-dirでディレクトリを追加
+claude --add-dir ../other-project
+
+# 方法2: @で外部ファイルを参照
+@/path/to/other/file.py を見て
+```
 
 ### Step 1-2: Claude Code起動とCLAUDE.md読み込み確認(3分)
 
@@ -87,7 +125,25 @@ CLAUDE.mdの内容を要約して
 /context
 ```
 
-**学習ポイント**: コンテキストウィンドウの使用状況を視覚的に確認できる
+**`/context`の出力の読み方**:
+
+```
+Context: ████████░░░░░░░░░░░░░░░░░░ 32% used (64K/200K tokens)
+                                    ↑        ↑
+                            使用中のトークン数  最大トークン数
+
+Files in context:
+• CLAUDE.md (2.1K tokens)     ← 読み込まれているファイル
+• app.py (1.5K tokens)
+• app.yaml (0.3K tokens)
+
+Conversation: 15.2K tokens    ← 会話履歴のトークン数
+```
+
+**目安**:
+- 50%以下: 十分な余裕あり
+- 50-80%: 注意(長い出力を求めると溢れる可能性)
+- 80%以上: `/clear`を検討
 
 ### Step 1-4: アプリの基本生成(8分)
 
@@ -122,6 +178,34 @@ Unity Catalogブラウザーアプリを作成して。
 - Esc: キャンセル
 - Tab: 修正を依頼
 - 今回は`1`(Yes)で承認
+
+### 軌道修正のテクニック
+
+Claude Codeが期待通りに動かない場合の対処法:
+
+| 操作 | 方法 | 用途 |
+|------|------|------|
+| **中断** | `Esc` | 処理を止めて方向転換 |
+| **巻き戻し** | `Esc` を2回、または `/rewind` | 履歴を戻って別のアプローチを試す |
+| **やり直し** | `/clear` | コンテキストをリセットして新鮮な状態から |
+
+**ベストプラクティス**: 同じ問題で2回以上修正しても解決しない場合は、`/clear`して最初からやり直す方が速い。その際、失敗から学んだことを含めた**より具体的なプロンプト**で再開する。
+
+### 具体的なプロンプトの重要性
+
+曖昧な指示は曖昧な結果を生みます。
+
+| ❌ 悪い例 | ✅ 良い例 |
+|----------|----------|
+| `テストを追加して` | `app.pyのテストを追加して。Warehouse接続エラーのケースをカバー。モックは使わないで` |
+| `エラーを直して` | `このエラーを見て。@app.py の42行目が原因だと思う。CLAUDE.mdのセキュリティルールに従って修正して` |
+| `UIを改善して` | `@app.py のサイドバーにテーブル検索機能を追加して。既存のst.selectboxパターンに合わせて実装して` |
+
+**具体的に指示すべきこと**:
+- 参照すべきファイルやパターン(@で指定)
+- エッジケースや制約条件
+- 使うべき/使わないべきライブラリ
+- CLAUDE.mdのどのルールに従うか
 
 **Phase 1完了チェック**:
 - [ ] app.py が生成された
@@ -302,7 +386,28 @@ claude -c  # または claude
 CLAUDE.mdのセキュリティ要件も確認して対応して。
 ```
 
-**学習ポイント**: `think hard`でExtended Thinkingが発動し、より深く考えてから実装される
+**Extended Thinkingについて**:
+
+Claude Code v2.0以降、Extended Thinkingは**Tabキーでトグル**が主な有効化方法です。
+
+```
+Tab → "Thinking on" と表示される → 深い思考が有効化
+```
+
+**強調フレーズの効果**:
+| フレーズ | 効果 |
+|---------|------|
+| `think` | 基本的な思考を促す |
+| `think hard` | より深い分析を促す |
+| `think harder` / `ultrathink` | 最も深い思考を促す |
+
+**使い分けの目安**:
+- 簡単な修正 → フレーズなし
+- 設計判断 → `think hard`
+- 複雑なアーキテクチャ → `ultrathink`
+
+**ソース**: [Claude Code Common Workflows](https://docs.anthropic.com/en/docs/claude-code/common-workflows)
+> "The way you prompt for thinking results in varying levels of thinking depth"
 
 **Phase 3完了チェック**:
 - [ ] 統計表示機能が動作する
@@ -362,12 +467,22 @@ cat app.yaml
 ### Step 5-2: デプロイ実行
 
 ```bash
-# アプリをデプロイ
-databricks apps deploy uc-browser-<your-name>
+# ワークスペースにアップロード
+databricks workspace import-dir . /Workspace/Users/<your-email>/apps/uc-browser-<your-name> --overwrite
+
+# 新規アプリを作成(初回のみ)
+databricks apps create uc-browser-<your-name>
+
+# デプロイ(ワークスペース上のパスを指定)
+databricks apps deploy uc-browser-<your-name> --source-code-path /Workspace/Users/<your-email>/apps/uc-browser-<your-name>
 
 # デプロイ状況確認
 databricks apps describe uc-browser-<your-name>
 ```
+
+**注意**: 
+- `deploy`はローカルからの直接デプロイではない。先に`workspace import-dir`でアップロードが必要
+- UIからアプリを作成した場合、作成時に表示されるコマンドをコピーして使用可能
 
 ### Step 5-3: 動作確認
 
@@ -390,12 +505,37 @@ https://<workspace>.cloud.databricks.com/apps/uc-browser-<your-name>
 | `streamlit: executable file not found` | 依存関係未インストール | `--prepare-environment`を付けて実行 |
 | `ModuleNotFoundError: streamlit` | 依存関係未インストール | `--prepare-environment`を付けて実行 |
 | `valueFrom property and can't be resolved locally` | valueFromはローカルで解決不可 | `--env DATABRICKS_WAREHOUSE_ID=xxx`で渡す |
-| CLAUDE.mdの内容を説明できない | 別ディレクトリで起動 | `cd databricks-apps-workshop`してから再起動 |
+| CLAUDE.mdの内容を説明できない | 別ディレクトリで起動 | 下記「ディレクトリ問題」参照 |
 | `YAML parse error` | app.yamlの構文エラー | Claude Codeに「@app.yaml の構文を検証して」 |
 | `Connection refused` | ポート競合 | 別のターミナルでアプリが動いていないか確認 |
 | `Permission denied` on catalog | Unity Catalog権限不足 | 講師に相談、別のカタログを使用 |
 | `Warehouse not found` | Warehouse ID間違い | IDを再確認 |
 | コンテキスト超過 | 会話が長すぎ | `/clear`でリセット |
+| アプリが起動しない(デプロイ後) | app.yamlでポート指定 | `--server.port`と`--server.address`を削除 |
+
+### ディレクトリ問題: CLAUDE.mdが読み込まれない
+
+**症状**: Claude Codeが「CLAUDE.mdの内容を要約して」に答えられない
+
+**原因**: Claude Codeをプロジェクトディレクトリ以外で起動している
+
+**解決方法**:
+```bash
+# 1. 現在のセッションを終了
+/exit
+
+# 2. プロジェクトディレクトリに移動
+cd databricks-apps-workshop
+
+# 3. 再起動
+claude
+```
+
+**確認方法**:
+```bash
+# 起動前にCLAUDE.mdの存在を確認
+ls -la CLAUDE.md
+```
 
 ### Claude Codeがうまく動かないとき
 
@@ -432,14 +572,22 @@ Streamlitのsession_stateを使用。
 |--------|---------|--------------|
 | CLAUDE.md読み込み確認 | 起動直後 | 「CLAUDE.mdの内容を要約して」 |
 | セッション継続 | /exit後に会話を継続 | `claude -c` |
-| Extended Thinking | 複雑な計画や設計 | `think`, `think hard`, `think harder`, `ultrathink` |
+| Extended Thinking | 複雑な計画や設計 | `Tab`でトグル、または`think hard`等のフレーズ |
 | コンテキスト使用量確認 | セッション管理 | `/context` |
 | ステータス確認 | 接続確認 | `/status` |
 | ファイル参照 | 特定ファイルを指定 | `@ファイル名` |
+| 外部ディレクトリ参照 | プロジェクト外のファイル | `claude --add-dir ../other` |
 | コンテキストクリア | 長いセッションのリセット | `/clear` |
+| **中断** | 処理を止めて方向転換 | `Esc` |
+| **巻き戻し** | 別のアプローチを試す | `Esc`を2回、または`/rewind` |
 | 差分確認 | 変更内容の確認 | 自動表示、1/2/3で応答、Tabで修正依頼 |
 | 対話的デバッグ | エラー解決 | エラーを貼り付けて相談 |
 | CLAUDE.md更新 | ノウハウ蓄積 | Claude Codeに追記を依頼、または`#`キー |
+
+**重要な原則**(公式ベストプラクティスより):
+- **反復が改善を生む**: 最初の出力が良くても、2-3回の反復で大幅に改善されることが多い
+- **早めの軌道修正**: 間違った方向に進んでいると気づいたら、すぐにEscで中断
+- **具体的なプロンプト**: 曖昧な指示は曖昧な結果を生む
 
 ## 次のステップ
 
